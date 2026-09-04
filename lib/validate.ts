@@ -25,7 +25,9 @@ export function validateGrafcet(data: any): ValidationResult {
     errors.push('Le GRAFCET doit contenir au moins une transition.');
   } else if (Array.isArray(data.steps)) {
     const stepIds = new Set(data.steps.map((s: any) => s.id));
-    
+    const referencedAsFrom = new Set<string>();
+    const referencedAsTo = new Set<string>();
+
     data.transitions.forEach((t: any, index: number) => {
       if (!t.fromSteps || !Array.isArray(t.fromSteps) || t.fromSteps.length === 0) {
         errors.push(`Transition #${index + 1} n'a aucune étape source.`);
@@ -34,6 +36,7 @@ export function validateGrafcet(data: any): ValidationResult {
           if (!stepIds.has(id)) {
             errors.push(`Transition #${index + 1} pointe vers une étape source inexistante : ${id}`);
           }
+          referencedAsFrom.add(id);
         });
       }
 
@@ -44,6 +47,7 @@ export function validateGrafcet(data: any): ValidationResult {
           if (!stepIds.has(id)) {
             errors.push(`Transition #${index + 1} pointe vers une étape cible inexistante : ${id}`);
           }
+          referencedAsTo.add(id);
         });
       }
 
@@ -51,6 +55,25 @@ export function validateGrafcet(data: any): ValidationResult {
         errors.push(`Transition #${index + 1} n'a pas de réceptivité valide.`);
       }
     });
+
+    // Règle de l'alternance étape/transition : chaque étape non terminale doit avoir
+    // une transition sortante, et chaque étape non initiale doit avoir une transition
+    // entrante. Sinon, deux étapes sont reliées directement sans transition (invalide).
+    if (Array.isArray(data.steps)) {
+      data.steps.forEach((s: any) => {
+        if (!s || !s.id) return;
+        if (!referencedAsFrom.has(s.id)) {
+          errors.push(
+            `L'étape ${s.label ?? s.id} n'a aucune transition sortante : chaque étape doit être suivie d'une transition avant l'étape suivante (règle de l'alternance étape/transition).`
+          );
+        }
+        if (s.type !== 'initial' && !referencedAsTo.has(s.id)) {
+          errors.push(
+            `L'étape ${s.label ?? s.id} n'est atteinte par aucune transition : deux étapes ne peuvent jamais se suivre directement sans transition entre elles.`
+          );
+        }
+      });
+    }
   }
 
   return {

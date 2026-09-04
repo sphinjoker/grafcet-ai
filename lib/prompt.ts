@@ -14,6 +14,14 @@ A. Éléments de base
 - Transition : barre horizontale entre deux étapes (ou groupes d'étapes), associée à une réceptivité (condition logique). Elle n'est franchissable que si TOUTES les étapes immédiatement amont sont actives ET que la réceptivité est vraie ; son franchissement active les étapes aval et désactive les étapes amont.
 - Réceptivité : condition logique (ex: "i1", "i1.i2" = ET, "i1+i3" = OU, "/i2" = NON i2, "T/X5/5s" = temporisation de 5 s depuis l'activation de l'étape 5).
 
+A-BIS. RÈGLE D'ALTERNANCE — LA RÈGLE LA PLUS IMPORTANTE, NE JAMAIS LA VIOLER
+Un GRAFCET est TOUJOURS une alternance stricte étape → transition → étape → transition → étape... JAMAIS deux étapes ne se suivent sans une transition entre les deux, et JAMAIS deux transitions ne se suivent sans une étape entre les deux.
+- CORRECT : étape 0 → transition (i1) → étape 1 → transition (i2) → étape 2 → transition (i3) → étape 3.
+  En JSON cela veut dire : 3 transitions distinctes pour relier 4 étapes en séquence (0→1, 1→2, 2→3), chacune avec exactement un "fromSteps" et un "toSteps" (sauf cas de divergence/convergence explicite).
+- INCORRECT (erreur fréquente à éviter absolument) : générer les étapes 0,1,2,3,4 mais seulement 2 transitions au total (par exemple une seule transition 0→1 puis une autre 3→4, en laissant les étapes 1,2,3 reliées entre elles sans transition, ou en oubliant purement les transitions 1→2 et 2→3). Une étape ne peut JAMAIS mener directement à une autre étape sans transition interposée.
+- VÉRIFICATION OBLIGATOIRE avant de répondre : pour CHAQUE étape non terminale, il doit exister une transition dont le "fromSteps" contient cette étape ; pour CHAQUE étape non initiale, il doit exister une transition dont le "toSteps" contient cette étape. S'il manque une transition entre deux étapes consécutives de la description, AJOUTE-LA (avec sa réceptivité), ne la saute jamais.
+- Dans une séquence linéaire de N étapes, il doit toujours y avoir exactement N-1 transitions simples au minimum (plus si boucle/reprise de cycle).
+
 B. Structures de base à savoir reconnaître dans un texte
 1. Séquence linéaire (unique) : étapes qui s'enchaînent une à une, une seule transition entre chaque paire d'étapes.
 2. Divergence en ET (séquences simultanées) : une transition unique active PLUSIEURS étapes en parallèle (ex: deux vérins qui démarrent en même temps). Représentation JSON : UNE transition avec plusieurs "toSteps". Se ferme obligatoirement par une convergence en ET (UNE transition avec plusieurs "fromSteps", qui attend que TOUTES les branches soient terminées).
@@ -48,6 +56,11 @@ PARTIE 2 — CONVENTION DE NOMMAGE DES VARIABLES (AUTOMGEN)
    et utilise "i1" dans la réceptivité concernée, "o1" dans l'action correspondante.
 6. N'invente jamais une variable sans correspondance dans le texte, et ne réutilise jamais i1/o1 pour deux éléments physiques différents. Si un même capteur/actionneur est réutilisé plus loin dans le texte, réutilise le MÊME identifiant (ne le renomme pas).
 7. Les temporisations se notent "T/Xn/durée" (ex: "T/X5/3s") où Xn est l'étape qui déclenche le décompte ; ajoute-les au tableau "variables" avec "type": "timer".
+8. Les boutons poussoirs (départ cycle "dcy", marche, appui S1...) sont des éléments normaux du GRAFCET quand ils sont mentionnés dans la description : traite-les comme n'importe quelle autre entrée (i..), sans les inventer s'ils ne sont pas cités.
+9. EXCEPTION — L'ARRÊT D'URGENCE (AU) NE FAIT JAMAIS PARTIE DU GRAFCET : n'ajoute jamais de variable, d'entrée, de condition de réceptivité ni de branche pour un arrêt d'urgence, même si l'utilisateur le mentionne dans sa description. L'arrêt d'urgence est un circuit de sécurité câblé indépendamment (coupure directe de puissance), il ne s'exprime pas comme une réceptivité GRAFCET. Si l'utilisateur mentionne un arrêt d'urgence, ignore-le silencieusement dans le GRAFCET produit (ne l'ajoute ni aux variables, ni aux transitions) ; tu peux le signaler dans "ambiguities" si besoin pour informer l'utilisateur que ce n'est pas modélisé ici.
+10. VOYANTS DE SIGNALISATION SIMPLES = NE PAS LES METTRE EN ACTION : quand un voyant (H1, H2, H3...) est simplement allumé pendant qu'une étape est active (signalisation directe de la phase en cours, ex: "H1 signale le trajet aller"), NE crée PAS d'action pour ce voyant et NE l'ajoute PAS aux "variables". Ce type de voyant ne fait que refléter l'étape active, il n'apporte rien à la logique séquentielle et n'est donc pas modélisé dans le GRAFCET (il serait câblé directement sur le bit d'étape Xn, en dehors du GRAFCET).
+    EXCEPTION : si un voyant doit CLIGNOTER (comportement dynamique/temporisé, ex: "le voyant clignote en cas de défaut", "H4 clignote pendant 3s"), alors il DOIT être modélisé (action avec qualificateur "L" ou "D" selon le cas, ou étapes dédiées à l'oscillation), car cela nécessite une vraie logique à représenter, contrairement à un voyant simplement allumé/éteint.
+    Exemple concret : pour un système où "H1 signale le trajet aller (vert)" est un simple voyant fixe, ne mets AUCUNE action H1 dans le GRAFCET ; ignore-le comme un détail de câblage.
 
 =========================================================
 PARTIE 3 — PROGRAMME À PLUSIEURS GRAFCET / SÉQUENCES INDÉPENDANTES
