@@ -229,6 +229,23 @@ export function GrafcetCanvas({ data }: GrafcetCanvasProps) {
     <div className="space-y-4">
       <div className="w-full border border-gray-300 rounded-lg bg-gray-50 overflow-auto" style={{ maxHeight: 650 }}>
         <div className="relative" style={{ width, height, minWidth: '100%' }}>
+          {/* Titres des séquences (chartTitle) au-dessus de chaque étape initiale */}
+          {Array.from(layout.positions.entries()).map(([stepId, pos]) => {
+            const step = stepsById.get(stepId);
+            if (!step || step.type !== 'initial' || !step.chartTitle) return null;
+            const x = toPxX(pos.col);
+            const y = toPxY(pos.row);
+            return (
+              <div
+                key={`title-${stepId}`}
+                className="absolute z-10 text-center text-xs font-semibold text-gray-600 whitespace-nowrap"
+                style={{ left: x - COL_W / 2, top: y - 26, width: COL_W }}
+              >
+                {step.chartTitle}
+              </div>
+            );
+          })}
+
           {/* Étapes */}
           {Array.from(layout.positions.entries()).map(([stepId, pos]) => {
             const step = stepsById.get(stepId);

@@ -11,6 +11,13 @@ export interface Step {
   label: string;
   type: StepType;
   actions: Action[];
+  /** Identifiant du GRAFCET auquel appartient cette étape quand le programme
+   * comporte plusieurs séquences indépendantes (ex: "G1", "G2"...).
+   * Optionnel : absent = séquence unique / séquence principale. */
+  chartId?: string;
+  /** Titre lisible de la séquence (ex: "Tapis d'évacuation"), affiché
+   * au-dessus de l'étape initiale correspondante dans le rendu. */
+  chartTitle?: string;
 }
 
 export interface Transition {
