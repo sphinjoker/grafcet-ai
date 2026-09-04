@@ -8,6 +8,15 @@ export function generateAutomgenCode(grafcet: GrafcetData): { code: string; isOf
   lines.push(`// Généré automatiquement`);
   lines.push(``);
 
+  if (Array.isArray(grafcet.variables) && grafcet.variables.length > 0) {
+    lines.push(`// DECLARATION DES VARIABLES E/S`);
+    grafcet.variables.forEach(v => {
+      const prefix = v.type === 'input' ? 'ENTREE' : v.type === 'output' ? 'SORTIE' : v.type === 'timer' ? 'TEMPO' : 'INTERNE';
+      lines.push(`${prefix} ${v.name}; // ${v.description}`);
+    });
+    lines.push(``);
+  }
+
   lines.push(`// DECLARATION DES ETAPES`);
   grafcet.steps.forEach(s => {
     const typeStr = s.type === 'initial' ? 'ETAPE_INITIALE' : 'ETAPE';

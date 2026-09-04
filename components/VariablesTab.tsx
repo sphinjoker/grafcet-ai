@@ -3,7 +3,7 @@ import { GrafcetData } from '@/lib/types';
 import { extractVariables } from '@/lib/variables';
 
 export function VariablesTab({ data }: { data: GrafcetData }) {
-  const variables = extractVariables(data);
+  const variables = Array.isArray(data.variables) && data.variables.length > 0 ? data.variables : extractVariables(data);
 
   return (
     <div className="bg-white p-4 rounded-lg border border-gray-200">

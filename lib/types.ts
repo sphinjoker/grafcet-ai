@@ -23,6 +23,7 @@ export interface Transition {
 export interface GrafcetData {
   title: string;
   description?: string;
+  variables?: Variable[];
   steps: Step[];
   transitions: Transition[];
   ambiguities?: string[];
